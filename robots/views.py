@@ -1,9 +1,12 @@
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Robot
 from django.utils.dateparse import parse_datetime
 from django.shortcuts import render
+from django.db.models import Count
+from datetime import datetime, timedelta
+from openpyxl import Workbook
+from .models import Robot
 
 def create_robot_web(request):
     return render(request, 'create_robot.html')
@@ -71,6 +74,49 @@ def robot_list_view(request):
 
             # Возвращаем JSON с данными
             return JsonResponse({'robots': robot_list}, status=200)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Only GET method is allowed'}, status=405)
+
+def export_robots_summary(request):
+    if request.method == "GET":
+        try:
+            # Получаем текущую дату и дату неделю назад
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=7)
+
+            # Выбираем роботов, созданных за последнюю неделю
+            robots = Robot.objects.filter(created__range=(start_date, end_date))
+
+            # Сгруппировать данные по модели и версии, подсчитать количество
+            summary = robots.values('model', 'version').annotate(count=Count('id'))
+
+            # Создаем новый Excel-файл
+            wb = Workbook()
+            models = set(item['model'] for item in summary)
+            
+            for model in models:
+                # Создаем лист для каждой модели
+                ws = wb.create_sheet(title=model)
+                ws.append(['Модель', 'Версия', 'Количество за неделю'])
+
+                # Добавляем строки с данными
+                for item in summary:
+                    if item['model'] == model:
+                        ws.append([item['model'], item['version'], item['count']])
+            
+            # Удаляем пустой лист, созданный по умолчанию
+            if "Sheet" in wb.sheetnames:
+                wb.remove(wb["Sheet"])
+
+            # Создаем HTTP-ответ с Excel-файлом
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="robots_summary.xlsx"'
+            wb.save(response)
+
+            return response
 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
