@@ -9,6 +9,9 @@
             font-family: Arial, sans-serif;
             margin: 20px;
         }
+        h1 {
+            text-align: center;
+        }
         form {
             max-width: 400px;
             margin: 0 auto;
@@ -47,9 +50,15 @@
         
         <label for="version">Version:</label>
         <input type="text" id="version" name="version" maxlength="2" required>
-        
+
         <label for="created">Created:</label>
         <input type="datetime-local" id="created" name="created" required>
+
+        <!-- Добавляем чекбокс -->
+        <label for="is_available">
+            <input type="checkbox" id="is_available" name="is_available" defalut="false">
+            Is Available
+        </label>
         
         <button type="submit">Create Robot</button>
     </form>
@@ -63,6 +72,7 @@
             const model = document.getElementById('model').value;
             const version = document.getElementById('version').value;
             const created = document.getElementById('created').value;
+            const is_available = document.getElementById('is_available').checked; // Получаем значение чекбокса
             
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
@@ -76,12 +86,17 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ model, version, created }),
+                    body: JSON.stringify({ 
+                        model, 
+                        version, 
+                        created, 
+                        is_available  // Передаем значение чекбокса
+                    }),
                 });
                 
                 const data = await response.json();
                 if (response.ok) {
-                    successMessage.textContent = data.message;
+                    successMessage.textContent = data.message || 'Robot created successfully!';
                     successMessage.style.display = 'block';
                 } else {
                     errorMessage.textContent = data.error || 'An error occurred';
