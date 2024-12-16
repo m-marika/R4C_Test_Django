@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Robot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input[type="text"], input[type="datetime-local"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .error, .success {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Create Robot</h1>
+    <form id="createRobotForm">
+        <label for="model">Model:</label>
+        <input type="text" id="model" name="model" maxlength="2" required>
+        
+        <label for="version">Version:</label>
+        <input type="text" id="version" name="version" maxlength="2" required>
+
+        <label for="created">Created:</label>
+        <input type="datetime-local" id="created" name="created" required>
+
+        <!-- Добавляем чекбокс -->
+        <label for="is_available">
+            <input type="checkbox" id="is_available" name="is_available" defalut="false">
+            Is Available
+        </label>
+        
+        <button type="submit">Create Robot</button>
+    </form>
+    <p class="error" id="errorMessage" style="display: none;"></p>
+    <p class="success" id="successMessage" style="display: none;"></p>
+
+    <script>
+        document.getElementById('createRobotForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const model = document.getElementById('model').value;
+            const version = document.getElementById('version').value;
+            const created = document.getElementById('created').value;
+            const is_available = document.getElementById('is_available').checked; // Получаем значение чекбокса
+            
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/robots/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        model, 
+                        version, 
+                        created, 
+                        is_available  // Передаем значение чекбокса
+                    }),
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    successMessage.textContent = data.message || 'Robot created successfully!';
+                    successMessage.style.display = 'block';
+                } else {
+                    errorMessage.textContent = data.error || 'An error occurred';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Failed to send request. Please try again.';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
